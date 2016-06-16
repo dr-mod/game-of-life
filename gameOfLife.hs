@@ -1,9 +1,13 @@
 import Control.Concurrent
 
 outerFrame :: (Int, Int) -> (Int, Int) -> [(Int, Int)]
-outerFrame (width, height) (x, y) = [(f, s) | f <- [x-1..x+1], s <- [y-1..y+1], 
-                                    not (x == f && s == y), 
-                                    not (f < 0 || f >= width || s < 0 || s >= height)]
+outerFrame (w, h) (x, y) = [(bar w f, bar h s) | f <- [x-1..x+1], s <- [y-1..y+1], 
+                            not (x == f && s == y)]
+                            where 
+                                bar bound p 
+                                    | p < 0 = bound - 1
+                                    | p >= bound = 0
+                                    | otherwise = p
 
 cellStatus :: Int -> Int -> Int
 cellStatus number alive | number == 3 || number == 2 && alive == 1 = 1 
