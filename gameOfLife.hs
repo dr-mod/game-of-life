@@ -20,6 +20,14 @@ sndLayer board (xb:xbs) point = let
                                     frame = outerFrame (length (board!!0), length board)
                                 in cellStatus (sum . map getBoardValue $ frame point) xb : sndLayer board xbs (fst point + 1, snd point)
 
+color :: [Char] -> [Char] -> [Char]                                
+color [] _ = []
+color (c:cs) (n:ns) 
+    | n == '*' && c /= n = "\ESC[0;32m" ++ n : "\ESC[0m"  ++ other
+    | otherwise = n : other
+    where
+        other = color cs ns
+
 outTrans 0 = ' '
 outTrans 1 = '*'
 inTrans '*' = 1
@@ -28,10 +36,14 @@ inTrans _ = 0
 clean = do putStr "\ESC[2J\ESC[H"
 
 run board = do
-    let view = map (\x -> map outTrans x) board
-    putStr "\ESC[H"
-    mapM_ putStrLn view
     let nextGen = fstLayer board board 0
+    let viewCurrentGen = map (\x -> map outTrans x) board
+    let viewNextGen = map (\x -> map outTrans x) nextGen
+    let oneStrCurrentGen = foldl (\acc x -> acc ++ x ++ "\n") "" viewCurrentGen
+    let oneStrNextGen = foldl (\acc x -> acc ++ x ++ "\n") "" viewNextGen
+    let colorized = color oneStrCurrentGen oneStrNextGen
+    --let col = "asdf" ++ colorized
+    putStr ("\ESC[H" ++ colorized)
     threadDelay 50000 
     run nextGen
 main = do
