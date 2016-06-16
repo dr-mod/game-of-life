@@ -37,16 +37,18 @@ outTrans 1 = '*'
 inTrans '*' = 1
 inTrans _ = 0
 
+viewToStrs :: [[Int]] -> [[Char]]
+viewToStrs board = map (map outTrans) board 
+
+oneStr :: [[Char]] -> [Char]
+oneStr strs = foldl (\acc x -> acc ++ x ++ "\n") "" strs
+
 clean = do putStr "\ESC[2J\ESC[H"
 
 run board = do
     let nextGen = fstLayer board board 0
-    let viewCurrentGen = map (\x -> map outTrans x) board
-    let viewNextGen = map (\x -> map outTrans x) nextGen
-    let oneStrCurrentGen = foldl (\acc x -> acc ++ x ++ "\n") "" viewCurrentGen
-    let oneStrNextGen = foldl (\acc x -> acc ++ x ++ "\n") "" viewNextGen
-    let colorized = color oneStrCurrentGen oneStrNextGen
-    --let col = "asdf" ++ colorized
+    let boardToStr = oneStr . viewToStrs
+    let colorized = color (boardToStr board) (boardToStr nextGen)
     putStr ("\ESC[H" ++ colorized)
     threadDelay 50000 
     run nextGen
