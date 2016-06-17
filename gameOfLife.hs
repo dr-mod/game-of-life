@@ -1,10 +1,14 @@
 import Control.Concurrent
 
-colGrn = "\ESC[0;32m"
-colNo = "\ESC[0m"
-
-curTop = "\ESC[H"
-curClear = "\ESC[2J" ++ curTop
+colGrn =    "\ESC[0;32m"
+colNo =     "\ESC[0m"
+curTop =    "\ESC[H"
+curClear =  "\ESC[2J" ++ curTop
+newL =      "\n"
+intD = 0
+intL = 1
+outL = '*'
+outD = ' '
 
 outerFrame :: (Int, Int) -> (Int, Int) -> [(Int, Int)]
 outerFrame (w, h) (x, y) = [(bar w f, bar h s) | f <- [x-1..x+1], s <- [y-1..y+1], 
@@ -30,29 +34,36 @@ sndLayer board (xb:xbs) point = let
                                     frame = outerFrame (length (board!!0), length board)
                                 in cellStatus (sum . map getBoardValue $ frame point) xb : sndLayer board xbs (fst point + 1, snd point)
 
-color :: [Char] -> [Char] -> [Char]                                
+color :: [Char] -> [Char] -> [Char]
 color [] _ = []
 color (c:cs) (n:ns) 
-    | n == '*' && c /= n = colGrn ++ n : colNo ++ other
+    | n == outL && c /= n = colGrn ++ n : colNo ++ other
     | otherwise = n : other
     where
         other = color cs ns
 
-outTrans 0 = ' '
-outTrans 1 = '*'
-inTrans '*' = 1
-inTrans _ = 0
+outTrans n | n == intD = outD
+           | n == intL = outL
+inTrans  n | n == outL = intL  
+           | otherwise = intD
 
 viewToStr :: [[Int]] -> [Char]
-viewToStr board = foldl (\acc x -> acc ++ x ++ "\n") "" $ map (map outTrans) board
+viewToStr board = foldl (\acc x -> acc ++ x ++ newL) "" $ map (map outTrans) board
+
+normalize :: Int -> [Char] -> [Char]
+normalize w line | length line > w = take w line
+                 | length line < w = line ++ replicate (w - length line) outD
+                 | otherwise = line
 
 run board = do
     let nextGen = fstLayer board board 0
-    let colorized = color (viewToStr board) (viewToStr nextGen)
-    putStr (curTop ++ colorized)
+    let colorized = curTop ++ color (viewToStr board) (viewToStr nextGen)
+    putStr colorized
     threadDelay 50000 
     run nextGen
+    
 main = do
     putStr curClear
     content <- readFile ("init.txt")
-    run . map (\x -> map inTrans x) $ lines content
+    let board = lines content
+    run . map (map inTrans) $ map (normalize (length $ board!!0)) board
