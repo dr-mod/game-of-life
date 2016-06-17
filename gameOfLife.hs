@@ -1,5 +1,11 @@
 import Control.Concurrent
 
+colGrn = "\ESC[0;32m"
+colNo = "\ESC[0m"
+
+curTop = "\ESC[H"
+curClear = "\ESC[2J" ++ curTop
+
 outerFrame :: (Int, Int) -> (Int, Int) -> [(Int, Int)]
 outerFrame (w, h) (x, y) = [(bar w f, bar h s) | f <- [x-1..x+1], s <- [y-1..y+1], 
                             not (x == f && s == y)]
@@ -27,7 +33,7 @@ sndLayer board (xb:xbs) point = let
 color :: [Char] -> [Char] -> [Char]                                
 color [] _ = []
 color (c:cs) (n:ns) 
-    | n == '*' && c /= n = "\ESC[0;32m" ++ n : "\ESC[0m"  ++ other
+    | n == '*' && c /= n = colGrn ++ n : colNo ++ other
     | otherwise = n : other
     where
         other = color cs ns
@@ -37,22 +43,16 @@ outTrans 1 = '*'
 inTrans '*' = 1
 inTrans _ = 0
 
-viewToStrs :: [[Int]] -> [[Char]]
-viewToStrs board = map (map outTrans) board 
-
-oneStr :: [[Char]] -> [Char]
-oneStr strs = foldl (\acc x -> acc ++ x ++ "\n") "" strs
-
-clean = do putStr "\ESC[2J\ESC[H"
+viewToStr :: [[Int]] -> [Char]
+viewToStr board = foldl (\acc x -> acc ++ x ++ "\n") "" $ map (map outTrans) board
 
 run board = do
     let nextGen = fstLayer board board 0
-    let boardToStr = oneStr . viewToStrs
-    let colorized = color (boardToStr board) (boardToStr nextGen)
-    putStr ("\ESC[H" ++ colorized)
+    let colorized = color (viewToStr board) (viewToStr nextGen)
+    putStr (curTop ++ colorized)
     threadDelay 50000 
     run nextGen
 main = do
-    clean
+    putStr curClear
     content <- readFile ("init.txt")
     run . map (\x -> map inTrans x) $ lines content
